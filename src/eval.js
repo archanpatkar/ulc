@@ -25,6 +25,7 @@ class Env {
         } else if (this.outer) {
             return this.outer.find(variable);
         }
+        throw new Error("No such binding");
     }
 
     update(variable, value) {
@@ -37,7 +38,8 @@ class Env {
     }
 
     create(variable, value) {
-        this.env[variable] = value;
+        if(!this.env[variable]) return this.env[variable] = value;
+        throw new Error("Cannot redefine let binding");
     }
 }
 
@@ -83,15 +85,34 @@ class Lambda {
     }
 
     toString() {
-        return this.scope?"<closure>":"<lambda>";   
+        return this.scope && this.scope != GLOBAL?"<closure>":"<lambda>";   
     }
 }
 
+function pair(fst,snd) {
+    this[0] = fst;
+    this[1] = snd;
+}
+
+pair.prototype.toString = function() {
+    return `(${this[0]},${this[1]})`
+}
+
+function globalEnv() {
+    const env = new Env();
+    env.create("fst",{ apply: v => v[0] });
+    env.create("snd",{ apply: v => v[1] });
+    env.create("print",{ apply: v => console.log(v) });
+    return env;
+}
+
+const GLOBAL = globalEnv();
+
 class Interpreter { 
-    constructor() {
+    constructor(global) {
         this.parser = new Parser();
-        this.checker = new TypeChecker();
         this.mode = value;
+        this.global = global?global:GLOBAL;
     }
 
     setMode(mode) {
@@ -99,7 +120,15 @@ class Interpreter {
     }
 
     ieval(ast, env) {
+        // console.log(ast)
         if (ast.node == "literal") return ast.val;
+        else if (ast.node == "pair") return new pair(
+            this.ieval(ast.fst,env),
+            this.ieval(ast.snd,env)
+        );
+        else if(ast.node == "let") {
+            return env.create(ast.name,this.ieval(ast.exp,env))
+        }
         else if (ast.node == "var")  {
             const v = env.find(ast.name);
             if (v instanceof Thunk) {
@@ -110,6 +139,8 @@ class Interpreter {
         }
         else if (ast.node == "condition") {
             const cond = this.ieval(ast.cond, env);
+            // console.log("testing if");
+            // console.log(cond);
             if (cond) return this.ieval(ast.exp1, env);
             else return this.ieval(ast.exp2, env);
         }
@@ -118,10 +149,12 @@ class Interpreter {
         }
         else if (ast.node == "apply") {
             const lam = this.ieval(ast.exp1,env);
-            let out;
-            if(this.mode == value) out = lam.apply(this.ieval(ast.exp2,env));
-            else out = lam.apply(new Thunk(ast.exp2,env,this));
-            return out;
+            // console.log(ast)
+            // console.log("-----")
+            // console.log(lam)
+            // console.log(lam.apply)
+            if(this.mode == value) return lam.apply(this.ieval(ast.exp2,env));
+            return lam.apply(new Thunk(ast.exp2,env,this));
         }
         else if (ast.node == "ADD") 
             return this.ieval(ast.l, env) + this.ieval(ast.r, env);
@@ -136,8 +169,7 @@ class Interpreter {
 
     evaluate(str) {
         const ast = this.parser.parse(str);
-        const output = this.ieval(ast,null);
-        return output;
+        return this.ieval(ast,this.global);
     }
 }
 

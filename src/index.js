@@ -6,19 +6,21 @@ const machine = new Interpreter();
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
-  prompt: 'styla> '
+  prompt: 'ulc> '
 });
 
 console.log(
 `
-        __          __        
-.-----.|  |_.--.--.|  |.---.-.
-|__ --||   _|  |  ||  ||  _  |
-|_____||____|___  ||__||___._|
-            |_____|           
-      
-`)
-console.log("styla (Simply Typed Lambda Calculus) 0.0.1");
+ __   __ ___     _______ 
+|  | |  |   |   |       |
+|  | |  |   |   |       |
+|  |_|  |   |   |       |
+|       |   |___|      _|
+|       |       |     |_ 
+|_______|_______|_______|
+`
+)
+console.log("ulc (Untyped Lambda Calculus) 0.0.1");
 console.log("");
 
 rl.prompt();
@@ -43,8 +45,9 @@ rl.on('line', (input) => {
     }
     else {
         try {
-            const {output, type} = machine.evaluate(input);
-            console.log(`${type}: ${output}`);
+            let o = machine.evaluate(input);
+            o = typeof o == "object"? o.toString(): o
+            if(o) console.log(o);
         }
         catch (e) {
             console.log(`Error: ${e.message}`)

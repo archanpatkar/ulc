@@ -1,5 +1,5 @@
-const symbols = ["(", ")", "\\", ".", "+", "-", "/", "*", ","];
-const keywords = ["if", "else", "then", "true", "false"];
+const symbols = ["(", ")", "\\", ".", "+", "-", "/", "*", ",", "="];
+const keywords = ["if", "else", "then", "true", "false", "let"];
 
 const token_name = new Map();
 token_name.set("(", "LPAREN");
@@ -7,6 +7,7 @@ token_name.set(")", "RPAREN");
 token_name.set("\\", "LAM");
 token_name.set(".", "BODY");
 token_name.set(",", "COMMA");
+token_name.set("=", "EQ");
 token_name.set("+", "ADD");
 token_name.set("-", "SUB");
 token_name.set("*", "MUL");
@@ -14,6 +15,7 @@ token_name.set("/", "DIV");
 token_name.set("if", "IF");
 token_name.set("else", "ELSE");
 token_name.set("then", "THEN");
+token_name.set("let", "LET");
 
 const white = [" ", "\n", "\b", "\t", "\r"];
 function isWhite(c) {

@@ -5,17 +5,33 @@ const tokenize = require("./lexer");
 // AST Nodes
 const Lam = (param, body) => ({ node: "lambda", param: param, body: body });
 const Lit = (type, val) => ({ node: "literal", type: type, val: val });
-const Pair = (fst,snd) => ({ node:"pair", fst:fst, snd:snd })
+const Pair = (fst,snd) => ({ node:"pair", fst:fst, snd:snd });
 const Var = (name) => ({ node: "var", name: name });
+const LetB = (name,exp) => ({ node: "let", name: name, exp:exp });
 const App = (lam, param) => ({ node: "apply", exp1: lam, exp2: param });
 const Condition = (cond,e1,e2) => ({ node: "condition", cond:cond, exp1: e1, exp2: e2 });
 const BinOp = (op, l, r) => ({ node: op, l: l, r: r });
 const UnOp = (op,v) => ({ node: op, val: v });
 
-const ops = ["ADD","SUB","DIV","MUL","NEG"];
-const not = ["EOF","RPAREN","TO","DEFT","BODY","THEN","ELSE"];
+const ops = ["ADD","SUB","DIV","MUL","NEG","EQ"];
+const not = ["EOF","RPAREN","TO","DEFT","BODY","THEN","ELSE","COMMA"];
 
+// Error handling can be improved
+// Eliminate dead code
 const handlers = {
+    "COMMA": {
+        nud() {
+            this.expect(null,"',' is not a unary operator");
+        }
+    },
+    "EQ": {
+        nud() {
+            this.expect(null,"'=' is not a unary operator");
+        },
+        led() {
+            this.expect(null,"'=' is not a binary operator");
+        }
+    },
     "IDEN": {
         nud(token) {
             return Var(token.value);
@@ -42,9 +58,14 @@ const handlers = {
             }
             this.expect("RPAREN", "Unmatched paren '('");
             return exp;
-        },
-        led(left) {
-            this.expect(null,"'(' not a binary operator");
+        }
+    },
+    "LET": {
+        nud() {
+            const name = this.expect("IDEN","Expected an identifier").value;
+            this.expect("EQ","Expected '='");
+            const exp = this.expression(0);
+            return LetB(name,exp);
         }
     },
     "MUL": {
@@ -96,9 +117,6 @@ const handlers = {
             this.expect("ELSE","Expected keyword 'else'");
             const e2 = this.expression(0);
             return Condition(cond,e1,e2);
-        },
-        led() {
-            this.expect(null,"'if' is not a binary operator");
         }
     },
     "LAM": {
@@ -108,9 +126,6 @@ const handlers = {
             this.expect("BODY","Expected '.'");
             const body = this.expression(0);
             return Lam(param.name,body);
-        },
-        led() {
-            expect(null,"'\\' is not a binary operator");
         }
     },
     "APPLY": {
